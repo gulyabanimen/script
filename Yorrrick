@@ -1,0 +1,127 @@
+if myHero.charName ~= "Yorick" then return end
+
+require "SxOrbWalk"
+
+local Qrange = 625
+local Wrange = 600
+local Erange = 600
+local ignite = nil
+local iDMG = 0
+
+local ignite, iDMG = nil, 0
+local QREADY, WREADY, EREADY, RREADY = false
+
+function OnLoad()
+
+PrintChat("Le_Yorrick loaded/yuklendi")
+
+YorkickMenu()
+
+end
+
+function YorkickMenu()
+
+
+Config = scriptConfig("My Yorick" , "Yorick")
+
+Config:addSubMenu("Key Settings" , "Keys")
+				Config.Keys:addParam("combokey", "Combo key", SCRIPT_PARAM_ONKEYDOWN, false, 32)
+
+Config:addSubMenu("Combo Settings", "Combo")
+				Config.Combo:addParam("UseQ", "Use Q", SCRIPT_PARAM_ONOFF, true)
+				Config.Combo:addParam("UseW", "Use W", SCRIPT_PARAM_ONOFF, true)
+				Config.Combo:addParam("UseE", "Use E", SCRIPT_PARAM_ONOFF, true)
+				Config.Combo:addParam("UseR", "Use R", SCRIPT_PARAM_ONOFF, true)
+	
+	Config:addSubMenu("Drawings", "Draw")
+					Config.Draw:addParam("DrawQ", "Draw Q range", SCRIPT_PARAM_ONOFF, true)
+				 ts = TargetSelector(TARGET_LESS_CAST_PRIORITY, 500)
+	ts.name = "Focus"
+			Config:addSubMenu("Target Selector", "TS")
+							Config.TS:addTS(ts)
+							
+							Config:addSubMenu("Orbwalker", "SxOrb")
+											SxOrb:LoadToMenu(Config.SxOrb)
+	end
+	
+	
+	function OnTick()
+						Check()
+						
+						if ValidTarget(target) then
+										if Config.Misc.KS then
+															KS(target)
+										end
+										if Config.Misc.iKS then
+															AutoIgnite(target)
+															
+										end
+						end
+
+if Config.Keys.combokey then
+				Combo()
+	end
+	end
+	
+	function OnDraw()
+					if Config.Draw.DrawQ and QREADY and not myHero.dead then
+	
+										DrawCircle(myHero.x, myHero.y, myHero.z, Qrange, 0x00FF00)
+										
+					end
+	end
+	
+function Checks()
+				ts:update()
+				target = ts.target
+				SxOrb:ForceTarget(target)
+				QREADY = (myHero:CanUseSpell(_Q) == READY)
+				WREADY = (myHero:CanUseSpell(_W) == READY)
+				EREADY = (myHero:CanUseSpell(_E) == READY)
+				IREADY = (ignite ~= nil and myHero:CanUseSpell(ignite) == READY)
+				
+	end
+	
+	function Combo()
+	
+					if WREADY and Config.Combo.UseW then
+								 if GetDistance(target) <= Wrange then
+												CastSpell(_W, target)
+								end
+					end
+					if QREADY and Config.Combo.UseE then
+							    if GetDistance(target) <= Qrange then
+													CastSpell(_Q, target)
+									end
+					end
+				 if EREADY and Config.Combo.UseQ then
+									if GetDistance(target) <= Erange then
+													CastSpell(_E, target)
+									end
+				end
+	end
+
+function KS(enemy)
+					if WREADY and getDMG("W", enemy, myHero) > enemy.helath then
+									if GetDistance(enemy) <= Wrange then
+													CastSpell(_Q, enemy)
+									end
+					end
+	end
+	
+	function AutoIgnite(enemy)
+					iDmg = ((IREADY and getDmg("IGNITE", enemy, myHero)) or 0)
+					if enemy.healt <= iDmg and GetDistance(enemy) <= 500 and ignite ~= nil then
+											if IREADY then CastSpell(ignite, enemy) end
+					end
+	end
+	
+	function IgniteCheck()
+	
+					if myHero:GetSpellData(SUMMONER_1).name:find("summonerdot") then
+									ignite = SUMMONER_1
+					elseif myHero:GetSpellData(SUMMONER_2).name:find("summonerdot") then
+									ignite = SUMMONER_2
+					end
+	end
+	
